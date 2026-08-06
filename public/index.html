@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FPC&#8209;7700 &middot; Fire Pump Fuzzy Controller</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+
+<div class="hmi">
+
+  <!-- ============ HEADER ============ -->
+  <header class="hmi-header">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M16 2 C 10 10, 8 14, 8 19 a 8 8 0 0 0 16 0 c 0-3-1-6-3-9 c 0.5 3-1 5-2.5 5.5 C 19.5 11 18 6 16 2 Z" />
+      </svg>
+      <div class="brand-text">
+        <h1>FPC&#8209;7700 <span>FIRE PUMP CONTROLLER</span></h1>
+        <p class="subtitle">Fuzzy Logic Motor &amp; Sprinkler Governor &mdash; Commercial Wet&#8209;Pipe System</p>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="status-chip" id="connChip"><span class="dot" id="connDot"></span><span id="connLabel">CONNECTING&hellip;</span></div>
+      <div class="status-chip mode-chip"><span>MODE</span><strong id="modeLabel">AUTO</strong></div>
+      <div class="status-chip clock-chip" id="clock">00:00:00</div>
+    </div>
+  </header>
+
+  <!-- ============ MAIN GRID ============ -->
+  <main class="hmi-grid">
+
+    <!-- ---------- LEFT: FIRE DETECTION ---------- -->
+    <section class="panel fire-panel" id="firePanel" aria-label="Fire detection sensors">
+      <h2 class="panel-title">FIRE DETECTION <span class="panel-title-tag">ZONE SENSORS</span></h2>
+
+      <div class="sensor-block">
+        <div class="sensor-head">
+          <span class="sensor-name">SMOKE OBSCURATION</span>
+          <span class="sensor-value"><strong id="smokeValue">0</strong>%</span>
+        </div>
+        <div class="v-gauge"><div class="v-gauge-fill" id="smokeFill"></div><div class="v-gauge-target" id="smokeThreshold" style="bottom:35%"></div></div>
+        <div class="membership-row" id="smokeMembership">
+          <span class="mship" data-set="LOW">LOW</span>
+          <span class="mship" data-set="MED">MED</span>
+          <span class="mship" data-set="HIGH">HIGH</span>
+        </div>
+      </div>
+
+      <div class="sensor-block">
+        <div class="sensor-head">
+          <span class="sensor-name">HEAT (&Delta;T ABOVE AMBIENT)</span>
+          <span class="sensor-value"><strong id="heatValue">0</strong>%</span>
+        </div>
+        <div class="v-gauge"><div class="v-gauge-fill heat" id="heatFill"></div><div class="v-gauge-target" style="bottom:35%"></div></div>
+        <div class="membership-row" id="heatMembership">
+          <span class="mship" data-set="LOW">LOW</span>
+          <span class="mship" data-set="MED">MED</span>
+          <span class="mship" data-set="HIGH">HIGH</span>
+        </div>
+      </div>
+
+      <div class="rule-trace">
+        <span class="rule-trace-label">ACTIVE RULE &mdash; VALVE CONTROLLER</span>
+        <p id="valveRuleTrace">smoke is LOW AND heat is LOW &rarr; valve CLOSED</p>
+      </div>
+
+      <div class="sim-controls">
+        <button class="btn btn-alarm" id="btnFire">SIMULATE FIRE EVENT</button>
+        <button class="btn btn-ghost" id="btnClear">CLEAR / RESET</button>
+      </div>
+    </section>
+
+    <!-- ---------- CENTER: TANK + MOTOR PUMP ---------- -->
+    <section class="panel plant-panel" id="plantPanel" aria-label="Tank and motor pump">
+      <h2 class="panel-title">SUPPLY TANK &amp; MOTOR PUMP <span class="panel-title-tag">FUZZY SPEED GOVERNOR</span></h2>
+
+      <div class="plant-body">
+
+        <div class="tank-wrap">
+          <div class="tank" id="tank">
+            <div class="tank-target-line" id="tankTargetLine" style="bottom:78%"><span>SETPOINT</span></div>
+            <div class="tank-liquid" id="tankLiquid">
+              <div class="tank-liquid-surface"></div>
+            </div>
+            <div class="tank-scale">
+              <span>100</span><span>75</span><span>50</span><span>25</span><span>0</span>
+            </div>
+          </div>
+          <div class="tank-readout">
+            <span class="readout-label">TANK LEVEL</span>
+            <span class="readout-value"><strong id="tankValue">0</strong>%</span>
+          </div>
+          <label class="setpoint-control">
+            <span>TARGET CAPACITY</span>
+            <input type="range" id="targetLevelSlider" min="20" max="100" value="78" />
+            <span id="targetLevelValue">78%</span>
+          </label>
+        </div>
+
+        <div class="gauge-motor-wrap">
+          <div class="pressure-gauge">
+            <svg viewBox="0 0 200 130" id="gaugeSvg">
+              <path class="gauge-track" d="M 20 110 A 80 80 0 0 1 180 110" />
+              <path class="gauge-track-fill" id="gaugeFill" d="M 20 110 A 80 80 0 0 1 180 110" />
+              <g id="gaugeTicks"></g>
+              <line id="gaugeNeedle" x1="100" y1="110" x2="100" y2="40" class="needle" />
+              <circle cx="100" cy="110" r="7" class="needle-hub" />
+              <text x="100" y="102" class="gauge-center-label">PSI</text>
+            </svg>
+            <div class="gauge-readout">
+              <strong id="pressureValue">0</strong><span>PSI</span>
+              <small>target <span id="targetPressureLabel">65</span> psi</small>
+            </div>
+          </div>
+
+          <div class="motor-unit">
+            <svg viewBox="0 0 140 140" id="motorSvg" class="motor-svg">
+              <circle cx="70" cy="70" r="46" class="motor-housing" />
+              <g id="motorRotor" class="motor-rotor">
+                <rect x="66" y="10" width="8" height="26" rx="3" class="rotor-blade" />
+                <rect x="66" y="104" width="8" height="26" rx="3" class="rotor-blade" />
+                <rect x="10" y="66" width="26" height="8" rx="3" class="rotor-blade" />
+                <rect x="104" y="66" width="26" height="8" rx="3" class="rotor-blade" />
+                <circle cx="70" cy="70" r="14" class="rotor-hub" />
+              </g>
+              <circle cx="70" cy="70" r="46" class="motor-ring" />
+            </svg>
+            <div class="motor-readout">
+              <span class="readout-label">PUMP MOTOR</span>
+              <strong id="pumpStatus">IDLE</strong>
+              <div class="mini-bar"><div class="mini-bar-fill" id="pumpSpeedBar"></div></div>
+              <small><span id="pumpSpeedValue">0</span>% speed &middot; <span id="pumpRpmValue">0</span> RPM</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rule-trace">
+        <span class="rule-trace-label">ACTIVE RULE &mdash; PUMP SPEED CONTROLLER</span>
+        <p id="pumpRuleTrace">levelError is ZE &rarr; speed MED</p>
+      </div>
+    </section>
+
+    <!-- ---------- RIGHT: SPRINKLER ZONES ---------- -->
+    <section class="panel sprinkler-panel" id="sprinklerPanel" aria-label="Sprinkler zones">
+      <h2 class="panel-title">SPRINKLER ZONES <span class="panel-title-tag">VALVE ACTUATION</span></h2>
+      <div class="zone-grid" id="zoneGrid"><!-- zone cards injected here --></div>
+    </section>
+
+  </main>
+
+  <!-- ============ EVENT LOG TICKER ============ -->
+  <footer class="event-log" aria-label="System event log">
+    <span class="event-log-label">EVENT LOG</span>
+    <ul id="eventLogList"></ul>
+  </footer>
+
+</div>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>

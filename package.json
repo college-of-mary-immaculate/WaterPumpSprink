@@ -1,0 +1,16 @@
+{
+  "name": "fire-pump-fuzzy-hmi",
+  "version": "1.0.0",
+  "description": "Component-based HMI dashboard that uses fuzzy logic to control a fire-pump motor (tank level / pressure) and sprinkler valves (smoke + heat), backed by a JSON mock API consumed with the Fetch API.",
+  "private": true,
+  "scripts": {
+    "mock-api": "json-server --watch db.json --port 3001",
+    "web": "http-server ./public -p 8080 -c-1",
+    "start": "concurrently \"npm:mock-api\" \"npm:web\""
+  },
+  "devDependencies": {
+    "json-server": "^0.17.4",
+    "http-server": "^14.1.1",
+    "concurrently": "^8.2.2"
+  }
+}
