@@ -1,18 +1,5 @@
-// pumpController.js
-// Fuzzy logic controller #1 — MOTOR PUMP SPEED
-//
-// Input:  levelError = targetLevel - currentTankLevel   (range -100..100, %)
-//         a positive error means the tank is BELOW its setpoint (needs filling)
-// Output: pumpSpeed (0..100 %) — how hard the motor should drive the pump
-//
-// This mirrors how a real fire-pump jockey/controller behaves: it drives
-// hard while the tank/header is far below setpoint, eases off as it
-// approaches the target, and idles once at capacity (rather than an
-// on/off bang-bang pump, which would hammer the motor).
-
 import { triangle, trapezoid, centroidDefuzzify, clamp } from './fuzzyCore.js';
 
-// --- Input membership functions: levelError, universe [-100, 100] ---
 const errorSets = {
   NB: (x) => trapezoid(x, -100, -100, -60, -20),   // far ABOVE target (overfull)
   NS: (x) => triangle(x, -40, -15, 0),
@@ -30,14 +17,6 @@ const speedSets = {
   MAX:  (y) => trapezoid(y, 85, 96, 100, 100),
 };
 
-/**
- * Rule base (5 rules — one per input set):
- *  NB (overfull)        -> OFF   (stop driving; tank/header already above setpoint)
- *  NS (slightly over)   -> LOW   (trickle, let demand bring it down naturally)
- *  ZE (at setpoint)     -> MED   (maintain — steady-state trim against usage/leak)
- *  PS (slightly under)  -> HIGH  (catch up)
- *  PB (far under)       -> MAX   (full motor speed — fire demand or big draw)
- */
 export function computePumpSpeed(targetLevel, currentLevel) {
   const error = clamp(targetLevel - currentLevel, -100, 100);
 
