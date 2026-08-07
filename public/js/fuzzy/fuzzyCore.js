@@ -25,7 +25,7 @@ export function centroidDefuzzify(firedRules, universeMin = 0, universeMax = 100
     numerator += membership * y;
     denominator += membership;
   }
-  if (denominator === 0) return universeMin; // no rule fired -> safe default
+  if (denominator === 0) return universeMin;
   return numerator / denominator;
 }
 
