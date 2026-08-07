@@ -16,7 +16,6 @@ export function centroidDefuzzify(firedRules, universeMin = 0, universeMax = 100
   let numerator = 0;
   let denominator = 0;
   for (let y = universeMin; y <= universeMax; y += step) {
-    // Aggregate: for each y, take the max over all rules of min(strength, outputSet(y))
     let membership = 0;
     for (const rule of firedRules) {
       const clipped = Math.min(rule.strength, rule.outputSet(y));
