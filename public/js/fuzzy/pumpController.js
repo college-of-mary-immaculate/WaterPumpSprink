@@ -5,10 +5,9 @@ const errorSets = {
   NS: (x) => triangle(x, -40, -15, 0),
   ZE: (x) => triangle(x, -10, 0, 10),
   PS: (x) => triangle(x, 0, 15, 40),
-  PB: (x) => trapezoid(x, 20, 60, 100, 100),        // far BELOW target (needs fill)
+  PB: (x) => trapezoid(x, 20, 60, 100, 100),
 };
 
-// --- Output membership functions: pumpSpeed, universe [0, 100] ---
 const speedSets = {
   OFF:  (y) => trapezoid(y, 0, 0, 2, 10),
   LOW:  (y) => triangle(y, 0, 20, 40),
