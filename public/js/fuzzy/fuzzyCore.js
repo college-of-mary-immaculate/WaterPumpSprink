@@ -1,9 +1,3 @@
-// fuzzyCore.js
-// Minimal, dependency-free Mamdani fuzzy inference engine.
-// Used by both the pump (tank-level) controller and the sprinkler
-// (smoke/heat) controller so the two stay mathematically consistent.
-
-/** Triangular membership function. Degenerate edges (a===b or b===c) act as a ramp. */
 export function triangle(x, a, b, c) {
   if (x <= a || x >= c) return 0;
   if (x === b) return 1;
@@ -11,7 +5,6 @@ export function triangle(x, a, b, c) {
   return (c - x) / (c - b);
 }
 
-/** Trapezoidal membership function, used for the open-ended extreme sets. */
 export function trapezoid(x, a, b, c, d) {
   if (x <= a || x >= d) return 0;
   if (x >= b && x <= c) return 1;
@@ -19,13 +12,6 @@ export function trapezoid(x, a, b, c, d) {
   return (d - x) / (d - c);
 }
 
-/**
- * Runs Mamdani inference over a set of rules and defuzzifies by centroid.
- * @param {Array<{strength:number, outputSet:(y:number)=>number}>} firedRules
- * @param {number} universeMin
- * @param {number} universeMax
- * @param {number} step
- */
 export function centroidDefuzzify(firedRules, universeMin = 0, universeMax = 100, step = 1) {
   let numerator = 0;
   let denominator = 0;
