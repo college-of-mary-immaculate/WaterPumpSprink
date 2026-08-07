@@ -1,13 +1,3 @@
-// sprinklerController.js
-// Fuzzy logic controller #2 — SPRINKLER VALVE OPENING
-//
-// Inputs:  smoke (0..100), heat (0..100) — normalized sensor intensity
-// Output:  valveOpening (0..100 %)
-//
-// Two inputs, so this is a small Mamdani MISO system: each of the 9
-// (smoke-set x heat-set) combinations is a rule, aggregated then
-// defuzzified by centroid — the same engine the pump controller uses.
-
 import { triangle, trapezoid, centroidDefuzzify, clamp } from './fuzzyCore.js';
 
 const level = {
@@ -23,12 +13,6 @@ const valveSets = {
   FULL:    (y) => trapezoid(y, 80, 95, 100, 100),
 };
 
-/**
- * Rule base (3x3 = 9 rules). Heat is weighted slightly ahead of smoke
- * (a real fire tends to register on heat before smoke fully saturates
- * a room), by letting HIGH heat alone reach FULL, while HIGH smoke
- * alone only reaches OPEN unless heat corroborates it.
- */
 const RULES = [
   ['LOW',  'LOW',  'CLOSED'],
   ['LOW',  'MED',  'PARTIAL'],
@@ -49,7 +33,7 @@ export function computeValveOpening(smoke, heat) {
   const heatDeg  = { LOW: level.LOW(h), MED: level.MED(h), HIGH: level.HIGH(h) };
 
   const firedRules = RULES.map(([sSet, hSet, outSet]) => {
-    const strength = Math.min(smokeDeg[sSet], heatDeg[hSet]); // AND -> min
+    const strength = Math.min(smokeDeg[sSet], heatDeg[hSet]);
     return {
       strength,
       outputSet: valveSets[outSet],
