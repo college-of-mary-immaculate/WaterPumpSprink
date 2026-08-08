@@ -1,8 +1,3 @@
-// mockApi.js
-// Thin Fetch API client for the json-server mock API defined in db.json.
-// Every network call in the app goes through here — components and the
-// fuzzy controllers never call fetch() directly.
-
 const BASE_URL = 'http://localhost:3001';
 
 async function request(path, options = {}) {
@@ -30,7 +25,6 @@ export const api = {
 
   postEvent: (entry) => request('/eventLog', { method: 'POST', body: JSON.stringify(entry) }),
 
-  /** Fetches every resource needed for one render tick, in parallel. */
   async getSnapshot() {
     const [system, sensors, pump, sprinklers, eventLog] = await Promise.all([
       this.getSystem(),

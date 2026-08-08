@@ -1,10 +1,3 @@
-// localFallback.js
-// Same shape as api.js (GET / PATCH / POST semantics, Promise-based) but
-// backed by an in-memory object instead of a network call. app.js falls
-// back to this automatically if json-server (the real JSON mock API)
-// isn't reachable, so the dashboard still runs for an offline demo —
-// the fuzzy logic and rendering code paths are identical either way.
-
 const DB = {
   system: { id: 1, targetLevel: 78, targetPressure: 65, mode: 'AUTO' },
   sensors: { id: 1, smoke: 3, heat: 12, pressure: 41, tankLevel: 62 },
@@ -18,7 +11,7 @@ const DB = {
   eventLog: [{ id: 1, t: '00:00:00', msg: 'SYSTEM BOOT \u2014 offline mock API (json-server unreachable)', level: 'WARN' }],
 };
 
-const wait = () => new Promise((r) => setTimeout(r, 15)); // mimic async network hop
+const wait = () => new Promise((r) => setTimeout(r, 15));
 
 export const localApi = {
   async getSystem() { await wait(); return { ...DB.system }; },

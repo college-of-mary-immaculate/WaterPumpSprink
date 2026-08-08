@@ -1,5 +1,3 @@
-// EventLog.js — component: renders the dynamic event/decision log
-
 export class EventLog {
   constructor(root) {
     this.list = root.querySelector('#eventLogList');

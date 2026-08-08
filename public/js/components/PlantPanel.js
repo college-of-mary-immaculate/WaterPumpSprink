@@ -1,7 +1,5 @@
-// PlantPanel.js — component: supply tank, pressure gauge, and motor pump
-
 const GAUGE_MAX_PSI = 100;
-const GAUGE_ARC_LENGTH = 251.2; // matches the SVG path's stroke-dasharray
+const GAUGE_ARC_LENGTH = 251.2;
 
 export class PlantPanel {
   constructor(root, { onTargetLevelChange }) {
@@ -72,10 +70,9 @@ export class PlantPanel {
       ? 'linear-gradient(180deg, #8FD9F5, #4FA8D8 40%, #2C5A72)'
       : '';
 
-    // Pressure gauge (0-100 psi over 180deg arc)
     const pct = Math.max(0, Math.min(1, sensors.pressure / GAUGE_MAX_PSI));
     this.gaugeFill.style.strokeDashoffset = `${GAUGE_ARC_LENGTH * (1 - pct)}`;
-    const angleDeg = pct * 180; // 0 = far left, 180 = far right
+    const angleDeg = pct * 180;
     this.gaugeNeedle.style.transform = `rotate(${angleDeg - 90}deg)`;
     this.pressureValue.textContent = Math.round(sensors.pressure);
     this.targetPressureLabel.textContent = Math.round(system.targetPressure);
@@ -83,7 +80,6 @@ export class PlantPanel {
     const lowPressure = sensors.pressure < system.targetPressure * 0.6;
     this.gaugeFill.style.stroke = lowPressure ? 'var(--red)' : 'var(--blue)';
 
-    // Motor / pump
     const speed = pumpResult.speed;
     const running = speed > 3;
     this.motorRotor.classList.toggle('spinning', running);

@@ -98,16 +98,26 @@ function updateClock() {
 async function tick() {
   const { sensors, system, pump, sprinklers } = state;
 
-  // 1) Sensor dynamics (this stands in for real hardware sensor drivers)
-  driftFireSensors(sensors);
-
-  // 2) Fuzzy controller #1 — pump speed from tank-level error
-  const pumpResult = computePumpSpeed(system.targetLevel, sensors.tankLevel);
-
-  // 3) Fuzzy controller #2 — valve opening from smoke + heat
+  // 1) Fuzzy controller #2 first — its valve opening drives suppression this tick
   const valveResult = computeValveOpening(sensors.smoke, sensors.heat);
 
-  // 4) Plant dynamics driven by the controller outputs
+  // 2) Sensor dynamics — valve opening is passed in so open sprinklers suppress the fire
+  driftFireSensors(sensors, valveResult.opening);
+
+  // 3) Fuzzy controller #1 — pump speed from tank-level error
+  const pumpResult = computePumpSpeed(system.targetLevel, sensors.tankLevel);
+
+  // 4) Emergency pump priority: if a fire is active and the tank has dropped below the
+  //    setpoint, guarantee the fill rate outpaces the sprinkler draw so the tank refills.
+  if (fireActive && sensors.tankLevel < system.targetLevel - 5) {
+    const minSpeed = sensors.tankLevel < 25 ? 100 : 85;
+    if (pumpResult.speed < minSpeed) {
+      pumpResult.speed = minSpeed;
+      pumpResult.dominantRule = `[FIRE PRIORITY] pump at ${minSpeed}% \u2014 ${pumpResult.dominantRule}`;
+    }
+  }
+
+  // 5) Plant dynamics driven by the controller outputs
   updatePlantDynamics(sensors, system, pumpResult, valveResult);
 
   pump.speed = pumpResult.speed;
@@ -138,33 +148,51 @@ async function tick() {
   } catch (_) { /* keep last known log on transient failure */ }
 }
 
-function driftFireSensors(sensors) {
-  // Fire intensity target eases up (SIMULATE FIRE) or down (CLEAR / natural decay)
+function driftFireSensors(sensors, valveOpening) {
+  // Each percent of valve opening contributes active suppression.
+  // At FULL OPEN (100 %) suppression peaks at 10 intensity-units/tick.
+  const suppression = (valveOpening / 100) * 10;
+
   if (fireActive) {
-    fireIntensityTarget = clamp(fireIntensityTarget + (Math.random() - 0.3) * 4, 40, 100);
+    // Fire grows randomly; open sprinklers subtract suppression each tick.
+    // Floor is 0 (not 40) so sprinklers CAN fully extinguish the fire.
+    fireIntensityTarget = clamp(
+      fireIntensityTarget + (Math.random() - 0.3) * 4 - suppression,
+      0, 100
+    );
+    // Auto-extinguish: sprinklers have brought intensity all the way down.
+    if (fireIntensityTarget <= 1) {
+      fireActive = false;
+      fireIntensityTarget = 0;
+      logEvent('INFO', 'Fire suppressed \u2713 \u2014 sprinklers extinguished the fire, returning to standby');
+    }
   } else {
+    // Natural decay after auto-extinguish or manual CLEAR
     fireIntensityTarget = clamp(fireIntensityTarget - 6, 0, 100);
     if (fireIntensityTarget <= 0.5) fireIntensityTarget = 0;
   }
 
   const ambientSmoke = 2 + Math.random() * 3;
-  const ambientHeat = 8 + Math.random() * 5;
+  const ambientHeat  = 8 + Math.random() * 5;
 
   // Heat responds a bit faster than smoke to a growing fire (matches the
-  // rule-base comment in sprinklerController.js)
-  const smokeTarget = fireActive ? fireIntensityTarget * 0.9 : ambientSmoke;
-  const heatTarget = fireActive ? fireIntensityTarget * 1.05 : ambientHeat;
+  // rule-base comment in sprinklerController.js).
+  // Use fireIntensityTarget > 0 (not fireActive) so sensors track back to
+  // ambient smoothly even after auto-extinguish sets fireActive = false.
+  const smokeTarget = fireIntensityTarget > 0 ? fireIntensityTarget * 0.9  : ambientSmoke;
+  const heatTarget  = fireIntensityTarget > 0 ? fireIntensityTarget * 1.05 : ambientHeat;
 
   sensors.smoke = clamp(sensors.smoke + (smokeTarget - sensors.smoke) * 0.25 + (Math.random() - 0.5) * 1.5, 0, 100);
-  sensors.heat = clamp(sensors.heat + (heatTarget - sensors.heat) * 0.35 + (Math.random() - 0.5) * 1.5, 0, 100);
+  sensors.heat  = clamp(sensors.heat  + (heatTarget  - sensors.heat)  * 0.35 + (Math.random() - 0.5) * 1.5, 0, 100);
 }
 
 function updatePlantDynamics(sensors, system, pumpResult, valveResult) {
-  // Tank: pump fills it, sprinkler draw + baseline usage drain it
+  // Tank: pump fills it, sprinkler draw + baseline usage drain it.
+  // Upper bound is the operator setpoint — the tank never overflows past the target.
   const fillRate = (pumpResult.speed / 100) * 2.4;
   const sprinklerDraw = (valveResult.opening / 100) * 1.8;
   const baselineUse = 0.15;
-  sensors.tankLevel = clamp(sensors.tankLevel + fillRate - sprinklerDraw - baselineUse, 0, 100);
+  sensors.tankLevel = clamp(sensors.tankLevel + fillRate - sprinklerDraw - baselineUse, 0, system.targetLevel);
 
   // Header pressure: first-order lag toward a target driven by pump speed,
   // pulled down while sprinklers are drawing water

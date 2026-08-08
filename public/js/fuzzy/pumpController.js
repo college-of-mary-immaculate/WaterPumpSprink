@@ -1,7 +1,7 @@
 import { triangle, trapezoid, centroidDefuzzify, clamp } from './fuzzyCore.js';
 
 const errorSets = {
-  NB: (x) => trapezoid(x, -100, -100, -60, -20),   // far ABOVE target (overfull)
+  NB: (x) => trapezoid(x, -100, -100, -60, -20),
   NS: (x) => triangle(x, -40, -15, 0),
   ZE: (x) => triangle(x, -10, 0, 10),
   PS: (x) => triangle(x, 0, 15, 40),

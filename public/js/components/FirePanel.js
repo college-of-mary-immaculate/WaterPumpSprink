@@ -1,5 +1,3 @@
-// FirePanel.js — component: smoke/heat sensor readouts + fuzzy membership lights
-
 export class FirePanel {
   constructor(root, { onSimulateFire, onClear }) {
     this.root = root;
@@ -39,7 +37,7 @@ export class FirePanel {
 
   _paintMembership(nodeList, degrees) {
     nodeList.forEach((el) => {
-      const set = el.dataset.set === 'MED' ? 'MED' : el.dataset.set; // LOW / MED / HIGH
+      const set = el.dataset.set === 'MED' ? 'MED' : el.dataset.set;
       const deg = degrees[set] || 0;
       el.classList.toggle('active', deg > 0.15);
       el.style.opacity = 0.5 + deg * 0.5;

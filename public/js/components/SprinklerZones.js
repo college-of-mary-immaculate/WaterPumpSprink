@@ -1,5 +1,3 @@
-// SprinklerZones.js — component: renders one zone card per sprinkler resource
-
 const sprinklerIconSVG = (id) => `
 <svg viewBox="0 0 34 34" aria-hidden="true">
   <rect x="14" y="2" width="6" height="8" rx="1.5" class="sprinkler-body" />
