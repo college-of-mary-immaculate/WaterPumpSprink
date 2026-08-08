@@ -7,41 +7,41 @@
   },
   "sensors": {
     "id": 1,
-    "smoke": 64.3,
-    "heat": 75,
-    "pressure": 35.5,
-    "tankLevel": 50.7
+    "smoke": 2.7,
+    "heat": 10.8,
+    "pressure": 37.1,
+    "tankLevel": 51
   },
   "pump": {
     "id": 1,
-    "speed": 60.4,
-    "rpm": 1752,
+    "speed": 50,
+    "rpm": 1450,
     "status": "RUNNING"
   },
   "sprinklers": [
     {
       "id": 1,
       "zone": "Zone A — Warehouse Floor",
-      "valve": 91.5,
-      "status": "FULL OPEN"
+      "valve": 4.4,
+      "status": "CLOSED"
     },
     {
       "id": 2,
       "zone": "Zone B — Server Room",
-      "valve": 91.5,
-      "status": "FULL OPEN"
+      "valve": 4.4,
+      "status": "CLOSED"
     },
     {
       "id": 3,
       "zone": "Zone C — Loading Dock",
-      "valve": 91.1,
-      "status": "FULL OPEN"
+      "valve": 4.4,
+      "status": "CLOSED"
     },
     {
       "id": 4,
       "zone": "Zone D — Office Wing",
-      "valve": 91.5,
-      "status": "FULL OPEN"
+      "valve": 4.4,
+      "status": "CLOSED"
     }
   ],
   "eventLog": [
