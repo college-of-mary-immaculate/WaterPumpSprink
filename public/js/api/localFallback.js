@@ -38,6 +38,16 @@ export const localApi = {
     return record;
   },
 
+  async patchTelemetry(sensors, pump, sprinklers) {
+    await wait();
+    Object.assign(DB.sensors, sensors);
+    Object.assign(DB.pump, pump);
+    sprinklers.forEach((z) => {
+      const s = DB.sprinklers.find((x) => x.id === z.id);
+      if (s) Object.assign(s, { valve: z.valve, status: z.status });
+    });
+  },
+
   async getSnapshot() {
     const [system, sensors, pump, sprinklers, eventLog] = await Promise.all([
       this.getSystem(), this.getSensors(), this.getPump(), this.getSprinklers(), this.getEventLog(),

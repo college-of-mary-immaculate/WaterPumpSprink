@@ -37,6 +37,12 @@ const fire = new FirePanel(fireEl, {
     fireIntensityTarget = 0;
     logEvent('INFO', 'Manual reset \u2014 clearing smoke/heat, returning to standby');
   },
+  onSmokeChange: (val) => {
+    if (state && state.sensors) state.sensors.smoke = val;
+  },
+  onHeatChange: (val) => {
+    if (state && state.sensors) state.sensors.heat = val;
+  },
 });
 
 const plant = new PlantPanel(plantEl, {
@@ -174,16 +180,14 @@ function driftFireSensors(sensors, valveOpening) {
 }
 
 function syncToApi(sensors, pump, sprinklers) {
-  activeApi.patchSensors({
+  const sensorPayload = {
     smoke: Math.round(sensors.smoke * 10) / 10,
     heat: Math.round(sensors.heat * 10) / 10,
     pressure: Math.round(sensors.pressure * 10) / 10,
     tankLevel: Math.round(sensors.tankLevel * 10) / 10,
-  }).catch(() => {});
-  activeApi.patchPump({ speed: pump.speed, rpm: pump.rpm, status: pump.status }).catch(() => {});
-  sprinklers.forEach((z) => {
-    activeApi.patchSprinkler(z.id, { valve: z.valve, status: z.status }).catch(() => {});
-  });
+  };
+  const pumpPayload = { speed: pump.speed, rpm: pump.rpm, status: pump.status };
+  activeApi.patchTelemetry(sensorPayload, pumpPayload, sprinklers).catch(() => {});
 }
 
 function maybeLogTransition(pumpResult, valveResult) {

@@ -12,4 +12,8 @@ export class EventLog {
       this.list.appendChild(li);
     });
   }
+
+  destroy() {
+    if (this.list) this.list.innerHTML = '';
+  }
 }

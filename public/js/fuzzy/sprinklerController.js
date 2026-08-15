@@ -41,7 +41,7 @@ export function computeValveOpening(smoke, heat) {
     };
   }).filter(r => r.strength > 0.001);
 
-  const opening = clamp(centroidDefuzzify(firedRules, 0, 100, 1), 0, 100);
+  let opening = clamp(centroidDefuzzify(firedRules, 0, 100, 1), 0, 100);
 
   const dominant = firedRules.length
     ? firedRules.reduce((a, b) => (b.strength > a.strength ? b : a))
@@ -52,12 +52,17 @@ export function computeValveOpening(smoke, heat) {
   else if (opening >= 45) status = 'OPEN';
   else if (opening >= 10) status = 'PARTIAL';
 
+  // Precision clamp: if valve status is CLOSED (< 10% opening or dominant set is CLOSED), force opening strictly to 0%
+  if (status === 'CLOSED' || (dominant && dominant.rule.includes('valve CLOSED'))) {
+    opening = 0;
+  }
+
   return {
     smoke: s,
     heat: h,
     opening: Math.round(opening * 10) / 10,
     status,
-    dominantRule: dominant ? dominant.rule : 'no rule fired',
+    dominantRule: dominant ? dominant.rule : 'smoke is LOW AND heat is LOW -> valve CLOSED',
     smokeDeg,
     heatDeg,
   };

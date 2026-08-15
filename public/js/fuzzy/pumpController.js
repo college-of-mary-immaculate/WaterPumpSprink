@@ -18,8 +18,9 @@ const speedSets = {
 
 export function computePumpSpeed(targetLevel, currentLevel) {
   const error = clamp(targetLevel - currentLevel, -100, 100);
-  // Deadband: stop pumping when within ±10% of setpoint to prevent overflow
-  if (error <= 10) {
+
+  // If tank is at or above target capacity (error <= 0), pump remains idle
+  if (error <= 0) {
     return {
       error: Math.round(error * 10) / 10,
       speed: 0,
@@ -36,7 +37,7 @@ export function computePumpSpeed(targetLevel, currentLevel) {
     PB: errorSets.PB(error),
   };
 
-  // Rules: positive error = below setpoint → pump to fill; negative error = above → stop
+  // Rules: positive error = below setpoint -> pump to fill; negative/zero error = at or above setpoint -> stop
   const firedRules = [
     { strength: strengths.NB, outputSet: speedSets.OFF,  rule: 'levelError is NB -> speed OFF'  },
     { strength: strengths.NS, outputSet: speedSets.OFF,  rule: 'levelError is NS -> speed OFF'  },
@@ -45,7 +46,8 @@ export function computePumpSpeed(targetLevel, currentLevel) {
     { strength: strengths.PB, outputSet: speedSets.MED,  rule: 'levelError is PB -> speed MED'  },
   ].filter(r => r.strength > 0.001);
 
-  const speed = clamp(centroidDefuzzify(firedRules, 0, 100, 1), 0, 100);
+  const rawSpeed = centroidDefuzzify(firedRules, 0, 100, 1);
+  const speed = clamp(rawSpeed, 0, 100);
 
   const dominant = firedRules.length
     ? firedRules.reduce((a, b) => (b.strength > a.strength ? b : a))
@@ -55,7 +57,7 @@ export function computePumpSpeed(targetLevel, currentLevel) {
     error: Math.round(error * 10) / 10,
     speed: Math.round(speed * 10) / 10,
     memberships: strengths,
-    dominantRule: dominant ? dominant.rule : 'no rule fired',
+    dominantRule: dominant ? dominant.rule : 'levelError is ZE -> speed OFF',
   };
 }
 

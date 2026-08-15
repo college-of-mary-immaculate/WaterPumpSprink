@@ -25,12 +25,15 @@ export class PlantPanel {
 
     this._drawTicks();
 
-    this.targetLevelSlider.addEventListener('input', (e) => {
+    this._onSliderInput = (e) => {
       this.targetLevelValue.textContent = `${e.target.value}%`;
-    });
-    this.targetLevelSlider.addEventListener('change', (e) => {
+    };
+    this._onSliderChange = (e) => {
       onTargetLevelChange(Number(e.target.value));
-    });
+    };
+
+    this.targetLevelSlider.addEventListener('input', this._onSliderInput);
+    this.targetLevelSlider.addEventListener('change', this._onSliderChange);
   }
 
   _drawTicks() {
@@ -93,5 +96,12 @@ export class PlantPanel {
     this.pumpRpmValue.textContent = Math.round((speed / 100) * 2900);
 
     this.pumpRuleTrace.textContent = pumpResult.dominantRule;
+  }
+
+  destroy() {
+    if (this.targetLevelSlider) {
+      this.targetLevelSlider.removeEventListener('input', this._onSliderInput);
+      this.targetLevelSlider.removeEventListener('change', this._onSliderChange);
+    }
   }
 }

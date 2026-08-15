@@ -25,6 +25,15 @@ export const api = {
 
   postEvent: (entry) => request('/eventLog', { method: 'POST', body: JSON.stringify(entry) }),
 
+  async patchTelemetry(sensors, pump, sprinklers) {
+    const promises = [
+      this.patchSensors(sensors),
+      this.patchPump(pump),
+      ...sprinklers.map((z) => this.patchSprinkler(z.id, { valve: z.valve, status: z.status })),
+    ];
+    await Promise.allSettled(promises);
+  },
+
   async getSnapshot() {
     const [system, sensors, pump, sprinklers, eventLog] = await Promise.all([
       this.getSystem(),

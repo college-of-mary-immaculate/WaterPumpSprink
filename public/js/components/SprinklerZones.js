@@ -58,4 +58,10 @@ export class SprinklerZones {
       refs.mist.classList.toggle('active', opening >= 10);
     });
   }
+
+  destroy() {
+    this.cards.clear();
+    if (this.grid) this.grid.innerHTML = '';
+    this.built = false;
+  }
 }
