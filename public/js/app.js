@@ -35,6 +35,10 @@ const fire = new FirePanel(fireEl, {
   onClear: () => {
     fireActive = false;
     fireIntensityTarget = 0;
+    if (state && state.sensors) {
+      state.sensors.smoke = 3;
+      state.sensors.heat = 8;
+    }
     logEvent('INFO', 'Manual reset \u2014 clearing smoke/heat, returning to standby');
   },
   onSmokeChange: (val) => {
@@ -136,38 +140,34 @@ function driftFireSensors(sensors, valveOpening) {
   const ambientSmoke = 2 + Math.random() * 3;
   const ambientHeat = 8 + Math.random() * 5;
 
-  // Fire growth phase: active fires increase intensity
   if (fireActive) {
-    fireIntensityTarget = clamp(fireIntensityTarget + (Math.random() - 0.3) * 4, 40, 100);
-  } else {
-    fireIntensityTarget = clamp(fireIntensityTarget - 6, 0, 100);
-    if (fireIntensityTarget <= 0.5) fireIntensityTarget = 0;
-  }
+    const fireGrowth = 3.5 + Math.random() * 2.5;
+    const suppressionRate = (valveOpening / 100) * 14;
+    fireIntensityTarget = clamp(fireIntensityTarget + fireGrowth - suppressionRate, 0, 100);
 
-  // Sprinkler fire suppression: open sprinklers reduce fire intensity
-  // This happens AFTER fire growth, so sprinklers actively fight the fire
-  // Higher valve opening = stronger suppression (sprinklers put out fires)
-  const suppressionRate = (valveOpening / 100) * 12;
-  if (valveOpening >= 10) {
-    fireIntensityTarget = clamp(fireIntensityTarget - suppressionRate, 0, 100);
-    // Direct sensor reduction: sprinkler water directly cools and clears smoke
-    const directReduction = (valveOpening / 100) * 8;
-    sensors.smoke = clamp(sensors.smoke - directReduction, ambientSmoke, 100);
-    sensors.heat = clamp(sensors.heat - directReduction * 1.2, ambientHeat, 100);
-    if (fireActive && fireIntensityTarget <= 10) {
+    if (fireIntensityTarget <= 2 && valveOpening >= 10) {
       fireActive = false;
-      logEvent('INFO', 'Sprinklers suppressed fire — intensity returned to ambient');
+      fireIntensityTarget = 0;
+      logEvent('INFO', 'Sprinklers successfully extinguished fire \u2014 intensity returned to ambient');
     }
+  } else {
+    fireIntensityTarget = clamp(fireIntensityTarget - 8, 0, 100);
   }
 
-  const smokeTarget = fireActive ? fireIntensityTarget * 0.9 : ambientSmoke;
-  const heatTarget = fireActive ? fireIntensityTarget * 1.05 : ambientHeat;
+  const smokeTarget = fireActive || fireIntensityTarget > 0 ? Math.max(ambientSmoke, fireIntensityTarget * 0.85) : ambientSmoke;
+  const heatTarget = fireActive || fireIntensityTarget > 0 ? Math.max(ambientHeat, fireIntensityTarget * 1.05) : ambientHeat;
 
-  sensors.smoke = clamp(sensors.smoke + (smokeTarget - sensors.smoke) * 0.25 + (Math.random() - 0.5) * 1.5, 0, 100);
-  sensors.heat = clamp(sensors.heat + (heatTarget - sensors.heat) * 0.35 + (Math.random() - 0.5) * 1.5, 0, 100);
+  const decayRate = fireActive ? 0.3 : 0.45;
+  sensors.smoke = clamp(sensors.smoke + (smokeTarget - sensors.smoke) * decayRate + (Math.random() - 0.5) * 1.0, 0, 100);
+  sensors.heat = clamp(sensors.heat + (heatTarget - sensors.heat) * decayRate + (Math.random() - 0.5) * 1.0, 0, 100);
+
+  if (!fireActive && fireIntensityTarget === 0 && sensors.smoke < ambientSmoke + 2 && sensors.heat < ambientHeat + 3) {
+    sensors.smoke = ambientSmoke;
+    sensors.heat = ambientHeat;
+  }
 }
 
-  function updatePlantDynamics(sensors, system, pumpResult, valveResult) {
+function updatePlantDynamics(sensors, system, pumpResult, valveResult) {
   const fillRate = (pumpResult.speed / 100) * 2.4;
   const sprinklerDraw = (valveResult.opening / 100) * 1.8;
   const baselineUse = 0.15;
