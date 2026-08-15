@@ -7,15 +7,15 @@
   },
   "sensors": {
     "id": 1,
-    "smoke": 7.5,
-    "heat": 12.8,
-    "pressure": 19.6,
-    "tankLevel": 48.5
+    "smoke": 2.4,
+    "heat": 10.5,
+    "pressure": 19.9,
+    "tankLevel": 49.7
   },
   "pump": {
     "id": 1,
-    "speed": 19.8,
-    "rpm": 574,
+    "speed": 18.3,
+    "rpm": 531,
     "status": "RUNNING"
   },
   "sprinklers": [
