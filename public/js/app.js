@@ -19,6 +19,7 @@ let fireActive = false;
 let fireIntensityTarget = 0;
 let lastLoggedValveStatus = null;
 let lastLoggedPumpBand = null;
+let lastValveOpening = 0;
 
 const fireEl = document.getElementById('firePanel');
 const plantEl = document.getElementById('plantPanel');
@@ -94,12 +95,10 @@ function updateClock() {
 async function tick() {
   const { sensors, system, pump, sprinklers } = state;
 
-  driftFireSensors(sensors);
-
   const pumpResult = computePumpSpeed(system.targetLevel, sensors.tankLevel);
-
   const valveResult = computeValveOpening(sensors.smoke, sensors.heat);
 
+  driftFireSensors(sensors, valveResult.opening);
   updatePlantDynamics(sensors, system, pumpResult, valveResult);
 
   pump.speed = pumpResult.speed;
@@ -114,7 +113,7 @@ async function tick() {
   syncToApi(sensors, pump, sprinklers);
 
   const dangerLevel = fire.render(sensors, valveResult);
-  plant.render(sensors, system, pumpResult, valveResult);
+  plant.render(sensors, system, pumpResult);
   zones.render(sprinklers, valveResult.opening, valveResult.status);
   setConnStatus(dangerLevel || valveResult.opening >= 45 ? 'alarm' : 'live');
 
@@ -127,7 +126,11 @@ async function tick() {
   } catch (_) { /* keep last known log on transient failure */ }
 }
 
-function driftFireSensors(sensors) {
+function driftFireSensors(sensors, valveOpening) {
+  const ambientSmoke = 2 + Math.random() * 3;
+  const ambientHeat = 8 + Math.random() * 5;
+
+  // Fire growth phase: active fires increase intensity
   if (fireActive) {
     fireIntensityTarget = clamp(fireIntensityTarget + (Math.random() - 0.3) * 4, 40, 100);
   } else {
@@ -135,8 +138,21 @@ function driftFireSensors(sensors) {
     if (fireIntensityTarget <= 0.5) fireIntensityTarget = 0;
   }
 
-  const ambientSmoke = 2 + Math.random() * 3;
-  const ambientHeat = 8 + Math.random() * 5;
+  // Sprinkler fire suppression: open sprinklers reduce fire intensity
+  // This happens AFTER fire growth, so sprinklers actively fight the fire
+  // Higher valve opening = stronger suppression (sprinklers put out fires)
+  const suppressionRate = (valveOpening / 100) * 12;
+  if (valveOpening >= 10) {
+    fireIntensityTarget = clamp(fireIntensityTarget - suppressionRate, 0, 100);
+    // Direct sensor reduction: sprinkler water directly cools and clears smoke
+    const directReduction = (valveOpening / 100) * 8;
+    sensors.smoke = clamp(sensors.smoke - directReduction, ambientSmoke, 100);
+    sensors.heat = clamp(sensors.heat - directReduction * 1.2, ambientHeat, 100);
+    if (fireActive && fireIntensityTarget <= 10) {
+      fireActive = false;
+      logEvent('INFO', 'Sprinklers suppressed fire — intensity returned to ambient');
+    }
+  }
 
   const smokeTarget = fireActive ? fireIntensityTarget * 0.9 : ambientSmoke;
   const heatTarget = fireActive ? fireIntensityTarget * 1.05 : ambientHeat;
@@ -145,11 +161,13 @@ function driftFireSensors(sensors) {
   sensors.heat = clamp(sensors.heat + (heatTarget - sensors.heat) * 0.35 + (Math.random() - 0.5) * 1.5, 0, 100);
 }
 
-function updatePlantDynamics(sensors, system, pumpResult, valveResult) {
+  function updatePlantDynamics(sensors, system, pumpResult, valveResult) {
   const fillRate = (pumpResult.speed / 100) * 2.4;
   const sprinklerDraw = (valveResult.opening / 100) * 1.8;
   const baselineUse = 0.15;
-  sensors.tankLevel = clamp(sensors.tankLevel + fillRate - sprinklerDraw - baselineUse, 0, 100);
+  // Stop filling once tank reaches target level (with hysteresis to prevent overshoot)
+  const effectiveFill = sensors.tankLevel >= system.targetLevel - 2 ? 0 : fillRate;
+  sensors.tankLevel = clamp(sensors.tankLevel + effectiveFill - sprinklerDraw - baselineUse, 0, system.targetLevel + 1);
 
   const pressureTarget = system.targetPressure * (0.15 + 0.85 * (pumpResult.speed / 100)) - sprinklerDraw * 6;
   sensors.pressure = clamp(sensors.pressure + (pressureTarget - sensors.pressure) * 0.3 + (Math.random() - 0.5) * 0.6, 0, 100);

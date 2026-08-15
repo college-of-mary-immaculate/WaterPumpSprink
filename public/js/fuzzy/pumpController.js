@@ -1,23 +1,32 @@
 import { triangle, trapezoid, centroidDefuzzify, clamp } from './fuzzyCore.js';
 
 const errorSets = {
-  NB: (x) => trapezoid(x, -100, -100, -60, -20),
-  NS: (x) => triangle(x, -40, -15, 0),
-  ZE: (x) => triangle(x, -10, 0, 10),
-  PS: (x) => triangle(x, 0, 15, 40),
-  PB: (x) => trapezoid(x, 20, 60, 100, 100),
+  NB: (x) => trapezoid(x, -100, -100, -40, -10),
+  NS: (x) => triangle(x, -35, -15, 0),
+  ZE: (x) => triangle(x, -8, 0, 8),
+  PS: (x) => triangle(x, 0, 18, 45),
+  PB: (x) => trapezoid(x, 30, 60, 100, 100),
 };
 
 const speedSets = {
   OFF:  (y) => trapezoid(y, 0, 0, 2, 10),
-  LOW:  (y) => triangle(y, 0, 20, 40),
-  MED:  (y) => triangle(y, 25, 50, 75),
-  HIGH: (y) => triangle(y, 60, 80, 100),
-  MAX:  (y) => trapezoid(y, 85, 96, 100, 100),
+  LOW:  (y) => triangle(y, 5, 20, 35),
+  MED:  (y) => triangle(y, 25, 45, 65),
+  HIGH: (y) => triangle(y, 50, 70, 90),
+  MAX:  (y) => trapezoid(y, 80, 95, 100, 100),
 };
 
 export function computePumpSpeed(targetLevel, currentLevel) {
   const error = clamp(targetLevel - currentLevel, -100, 100);
+  // Deadband: stop pumping when within ±10% of setpoint to prevent overflow
+  if (error <= 10) {
+    return {
+      error: Math.round(error * 10) / 10,
+      speed: 0,
+      memberships: { NB: 0, NS: 0, ZE: 1, PS: 0, PB: 0 },
+      dominantRule: 'levelError is ZE -> speed OFF',
+    };
+  }
 
   const strengths = {
     NB: errorSets.NB(error),
@@ -27,12 +36,13 @@ export function computePumpSpeed(targetLevel, currentLevel) {
     PB: errorSets.PB(error),
   };
 
+  // Rules: positive error = below setpoint → pump to fill; negative error = above → stop
   const firedRules = [
     { strength: strengths.NB, outputSet: speedSets.OFF,  rule: 'levelError is NB -> speed OFF'  },
-    { strength: strengths.NS, outputSet: speedSets.LOW,  rule: 'levelError is NS -> speed LOW'  },
-    { strength: strengths.ZE, outputSet: speedSets.MED,  rule: 'levelError is ZE -> speed MED'  },
-    { strength: strengths.PS, outputSet: speedSets.HIGH, rule: 'levelError is PS -> speed HIGH' },
-    { strength: strengths.PB, outputSet: speedSets.MAX,  rule: 'levelError is PB -> speed MAX'  },
+    { strength: strengths.NS, outputSet: speedSets.OFF,  rule: 'levelError is NS -> speed OFF'  },
+    { strength: strengths.ZE, outputSet: speedSets.OFF,  rule: 'levelError is ZE -> speed OFF'  },
+    { strength: strengths.PS, outputSet: speedSets.LOW,  rule: 'levelError is PS -> speed LOW'  },
+    { strength: strengths.PB, outputSet: speedSets.MED,  rule: 'levelError is PB -> speed MED'  },
   ].filter(r => r.strength > 0.001);
 
   const speed = clamp(centroidDefuzzify(firedRules, 0, 100, 1), 0, 100);

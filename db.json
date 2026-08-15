@@ -7,16 +7,16 @@
   },
   "sensors": {
     "id": 1,
-    "smoke": 2.7,
-    "heat": 10.8,
-    "pressure": 37.1,
-    "tankLevel": 51
+    "smoke": 28.8,
+    "heat": 48.2,
+    "pressure": 8.3,
+    "tankLevel": 47.7
   },
   "pump": {
     "id": 1,
-    "speed": 50,
-    "rpm": 1450,
-    "status": "RUNNING"
+    "speed": 0,
+    "rpm": 0,
+    "status": "IDLE"
   },
   "sprinklers": [
     {
@@ -956,6 +956,36 @@
       "level": "WARN",
       "msg": "MANUAL TRIGGER — fire event simulation started",
       "id": 152
+    },
+    {
+      "t": "17:09:28",
+      "level": "INFO",
+      "msg": "Pump governor → OFF (0% speed) — levelError is ZE -> speed OFF",
+      "id": 153
+    },
+    {
+      "t": "17:09:28",
+      "level": "INFO",
+      "msg": "Sprinkler valves → CLOSED (4%) — smoke is LOW AND heat is LOW -> valve CLOSED",
+      "id": 154
+    },
+    {
+      "t": "17:09:28",
+      "level": "INFO",
+      "msg": "Sprinkler valves → CLOSED (4%) — smoke is LOW AND heat is LOW -> valve CLOSED",
+      "id": 155
+    },
+    {
+      "t": "17:09:28",
+      "level": "INFO",
+      "msg": "Pump governor → OFF (0% speed) — levelError is ZE -> speed OFF",
+      "id": 156
+    },
+    {
+      "t": "17:09:38",
+      "level": "WARN",
+      "msg": "MANUAL TRIGGER — fire event simulation started",
+      "id": 157
     }
   ]
 }
